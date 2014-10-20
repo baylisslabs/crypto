@@ -42,36 +42,31 @@ def Maj(x,y,z):
 def hash(msg):
 
     ## PREPROCESSING 
-    
+        
+    # calculate number of blocks allowing for padding(byte) and 64-bit length
+    bz = 64
+    N = (len(msg)+72)/64
+    M = [[]]*N
+    msg_len_bits = len(msg)*8
+
     # add trailing '1' bit (+ 0's padding) to string [5.1.1]
     msg += '\x80'    
-    
-    # convert string msg into 512-bit/64-byte blocks arrays of ints [5.2.1]    
-    M = []
-    bz = 64
-    
-    blk = msg[:bz]
-    while len(blk):        
-        blk = struct.pack('64s',blk)
-        
+
+    for n in range(0,N):
+        blk = struct.pack('64s',msg[bz*n:min(bz*n+bz,len(msg))])
         m = [0x0] * (bz/4)
         for i in range(0,bz/4):
             m[i] = struct.unpack('>L',blk[i*4:i*4+4])[0]
-        M.append(m)
-          
-        blk = msg[len(M)*bz:len(M)*bz+bz]        
-     
-    # add length (in bits) into final pair of 32-bit integers (big-endian) [5.1.1]    
-    msg_len_bits = (len(msg)-1)*8
+        M[n] = m
+    
+    # add length (in bits) into final pair of 32-bit integers (big-endian) [5.1.1]       
     M[-1][14] = (msg_len_bits >> 32) & 0xffffffff
     M[-1][15] = msg_len_bits & 0xffffffff
-    
-    
+
     # HASH COMPUTATION [6.1.2]
     # initial hash value [5.3.1]		
 
     H = [ 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 ]
-    N = len(M)
     W = [0]*64  
     
     for i in range(0,N):
